@@ -1,67 +1,78 @@
-package model.entities;
+package gui;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
-public class Department implements Serializable {
+import application.Main;
+import gui.util.Alerts;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.fxml.Initializable;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.VBox;
+import model.services.DepartmentService;
+import model.services.SellerService;
 
-	private static final long serialVersionUID = 1L;
+public class MainViewController implements Initializable {
 
-	private Integer id;
-	private String name;
+	@FXML
+	private MenuItem menuItemSeller;
 	
-	public Department() {
+	@FXML
+	private MenuItem menuItemDepartment;
+	
+	@FXML
+	private MenuItem menuItemAbout;
+
+	@FXML
+	public void onMenuItemSellerAction() {
+		loadView("/gui/SellerList.fxml", (SellerListController controller) -> {
+			controller.setSellerService(new SellerService());
+			controller.updateTableView();
+		});
 	}
 
-	public Department(Integer id, String name) {
-		this.id = id;
-		this.name = name;
+	@FXML
+	public void onMenuItemDepartmentAction() {
+		loadView("/gui/DepartmentList.fxml", (DepartmentListController controller) -> {
+			controller.setDepartmentService(new DepartmentService());
+			controller.updateTableView();
+		});
 	}
-
-	public Integer getId() {
-		return id;
+	
+	@FXML
+	public void onMenuItemAboutAction() {
+		loadView("/gui/About.fxml", x -> {});
 	}
-
-	public void setId(Integer id) {
-		this.id = id;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
+	
 	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		return result;
+	public void initialize(URL uri, ResourceBundle rb) {
 	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Department other = (Department) obj;
-		if (id == null) {
-			if (other.id != null)
-				return false;
-		} else if (!id.equals(other.id))
-			return false;
-		return true;
-	}
-
-	@Override
-	public String toString() {
-		return "Department [id=" + id + ", name=" + name + "]";
-	}
+	
+	private synchronized <T> void loadView(String absoluteName, Consumer<T> initializingAction) {
+		try {
+			FXMLLoader loader = new FXMLLoader(getClass().getResource(absoluteName));
+			VBox newVBox = loader.load();
+			
+			Scene mainScene = Main.getMainScene();
+			VBox mainVBox = (VBox) ((ScrollPane) mainScene.getRoot()).getContent();
+			
+			Node mainMenu = mainVBox.getChildren().get(0);
+			mainVBox.getChildren().clear();
+			mainVBox.getChildren().add(mainMenu);
+			mainVBox.getChildren().addAll(newVBox.getChildren());
+			
+			T controller = loader.getController();
+			initializingAction.accept(controller);
+		}
+		catch (IOException e) {
+			Alerts.showAlert("IO Exception", "Error loading view", e.getMessage(), AlertType.ERROR);
+		}
+	}	
 }
-
-
